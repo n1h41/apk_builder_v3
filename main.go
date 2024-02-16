@@ -34,6 +34,7 @@ var (
 		b.Left = "┤"
 		return titleStyle.Copy().BorderStyle(b)
 	}()
+
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
@@ -214,10 +215,9 @@ func compressApks(flavor string, outChan chan string) tea.Cmd {
 			return isMatch
 		})
 		if len(directoryContents) == 0 {
-			fmt.Println("No file generated for flavor:", flavor)
 			return cmdError{fmt.Errorf("No file generated for flavor: %s", flavor)}
 		}
-		fmt.Println("Compressing APKs...")
+		outChan <- "Compressing APKs..."
 		zipFile, err := os.Create("build-apk.zip")
 		if err != nil {
 			return cmdError{err}
@@ -347,9 +347,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
 		return m, tea.Quit
 	case tea.WindowSizeMsg:
+		m.viewport.Width = msg.Width
 		m.flavors.SetWidth(msg.Width)
 		m.releaseModes.SetWidth(msg.Width)
-		m.viewport.Width = msg.Width
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
