@@ -345,7 +345,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.stopwatch.Stop()
 		m.finalOutputs = append(m.finalOutputs, "File uploaded successfully. ✅")
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
-		return m, tea.Quit
+		return m, nil
 	case tea.WindowSizeMsg:
 		m.viewport.Width = msg.Width
 		m.flavors.SetWidth(msg.Width)
@@ -355,8 +355,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
-
-		case "enter":
+		case "R":
+			m.flavorChoice = ""
+			m.releaseModeChoice = ""
+			m.finalOutputs = []string{}
+			return m, nil
+		case "enter", " ":
 			if m.flavorChoice == "" {
 				i, ok := m.flavors.SelectedItem().(item)
 				if ok {
