@@ -288,6 +288,10 @@ func waitForCmdResp(outChan chan string) tea.Cmd {
 	}
 }
 
+func cleanup() {
+	os.Remove("build-apk.zip")
+}
+
 func (m model) Init() tea.Cmd {
 	return m.spinner.Tick
 }
@@ -345,6 +349,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.stopwatch.Stop()
 		m.finalOutputs = append(m.finalOutputs, "File uploaded successfully. ✅")
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
+		if m.flavorChoice != "dev" {
+			cleanup()
+		}
 		return m, tea.Quit
 	case tea.WindowSizeMsg:
 		m.viewport.Width = msg.Width
