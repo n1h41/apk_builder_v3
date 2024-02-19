@@ -164,8 +164,10 @@ func buildApk(outChan chan string, flavor string, mode string) tea.Cmd {
 	return func() tea.Msg {
 		var c *exec.Cmd
 		if mode == "debug" {
+			outChan <- "Uploading APK for debug mode..."
 			c = exec.Command("flutter", "build", "apk", "--debug", "--flavor", flavor, "--dart-define", "FLAVOR="+flavor)
 		} else {
+			outChan <- "Uploading APKs for release mode..."
 			c = exec.Command("flutter", "build", "apk", "--split-per-abi", "--flavor", flavor, "--dart-define", "FLAVOR="+flavor)
 		}
 		return getCmdOutput(outChan, c, func() tea.Msg {
@@ -217,7 +219,6 @@ func compressApks(flavor string, outChan chan string) tea.Cmd {
 		if len(directoryContents) == 0 {
 			return cmdError{fmt.Errorf("No file generated for flavor: %s", flavor)}
 		}
-		outChan <- "Compressing APKs..."
 		zipFile, err := os.Create("build-apk.zip")
 		if err != nil {
 			return cmdError{err}
@@ -259,10 +260,10 @@ func compressApks(flavor string, outChan chan string) tea.Cmd {
 	}
 }
 
-func uploadFile(outChan chan string, flavor string) tea.Cmd {
+func uploadFile(outChan chan string, mode string) tea.Cmd {
 	return func() tea.Msg {
 		var cmd *exec.Cmd
-		if flavor == "debug" {
+		if mode == "debug" {
 			cmd = exec.Command("curl", "--upload-file", "./build/app/outputs/flutter-apk/app-dev-debug.apk", "https://transfer.sh")
 		} else {
 			cmd = exec.Command("curl", "--upload-file", "./build-apk.zip", "https://transfer.sh")
@@ -331,6 +332,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
 		m.zippingFiles = true
 		m.stopwatch.Reset()
+		if m.releaseModeChoice == "debug" {
+			m.finalOutputs = append(m.finalOutputs, "Uploading APK to transfer.sh... 🚀")
+			return m, tea.Batch(m.stopwatch.Init(), uploadFile(m.cmdChan, m.releaseModeChoice), waitForCmdResp(m.cmdChan))
+		}
 		return m, tea.Batch(m.stopwatch.Init(), compressApks(m.flavorChoice, m.cmdChan), waitForCmdResp(m.cmdChan))
 	case apkZipped:
 		m.zippingFiles = false
@@ -339,7 +344,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
 		m.uploadingFiles = true
 		m.stopwatch.Reset()
-		return m, tea.Batch(m.stopwatch.Init(), uploadFile(m.cmdChan, m.flavorChoice), waitForCmdResp(m.cmdChan))
+		m.finalOutputs = append(m.finalOutputs, "Uploading APK to transfer.sh... 🚀")
+		return m, tea.Batch(m.stopwatch.Init(), uploadFile(m.cmdChan, m.releaseModeChoice), waitForCmdResp(m.cmdChan))
 	case fileUploaded:
 		m.uploadingFiles = false
 		m.stopwatch.Stop()
