@@ -262,7 +262,7 @@ func compressApks(flavor string, outChan chan string) tea.Cmd {
 func uploadFile(outChan chan string, flavor string) tea.Cmd {
 	return func() tea.Msg {
 		var cmd *exec.Cmd
-		if flavor == "dev" {
+		if flavor == "debug" {
 			cmd = exec.Command("curl", "--upload-file", "./build/app/outputs/flutter-apk/app-dev-debug.apk", "https://transfer.sh")
 		} else {
 			cmd = exec.Command("curl", "--upload-file", "./build-apk.zip", "https://transfer.sh")
