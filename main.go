@@ -260,11 +260,11 @@ func compressApks(flavor string, outChan chan string) tea.Cmd {
 	}
 }
 
-func uploadFile(outChan chan string, mode string) tea.Cmd {
+func uploadFile(outChan chan string, mode string, flavor string) tea.Cmd {
 	return func() tea.Msg {
 		var cmd *exec.Cmd
 		if mode == "debug" {
-			cmd = exec.Command("curl", "--upload-file", "./build/app/outputs/flutter-apk/app-dev-debug.apk", "https://transfer.sh")
+			cmd = exec.Command("curl", "--upload-file", "./build/app/outputs/flutter-apk/app-"+flavor+"-debug.apk", "https://transfer.sh")
 		} else {
 			cmd = exec.Command("curl", "--upload-file", "./build-apk.zip", "https://transfer.sh")
 		}
@@ -334,7 +334,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.stopwatch.Reset()
 		if m.releaseModeChoice == "debug" {
 			m.finalOutputs = append(m.finalOutputs, "Uploading APK to transfer.sh... 🚀")
-			return m, tea.Batch(m.stopwatch.Init(), uploadFile(m.cmdChan, m.releaseModeChoice), waitForCmdResp(m.cmdChan))
+			return m, tea.Batch(m.stopwatch.Init(), uploadFile(m.cmdChan, m.releaseModeChoice, m.flavorChoice), waitForCmdResp(m.cmdChan))
 		}
 		return m, tea.Batch(m.stopwatch.Init(), compressApks(m.flavorChoice, m.cmdChan), waitForCmdResp(m.cmdChan))
 	case apkZipped:
@@ -345,7 +345,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.uploadingFiles = true
 		m.stopwatch.Reset()
 		m.finalOutputs = append(m.finalOutputs, "Uploading APK to transfer.sh... 🚀")
-		return m, tea.Batch(m.stopwatch.Init(), uploadFile(m.cmdChan, m.releaseModeChoice), waitForCmdResp(m.cmdChan))
+		return m, tea.Batch(m.stopwatch.Init(), uploadFile(m.cmdChan, m.releaseModeChoice, m.flavorChoice), waitForCmdResp(m.cmdChan))
 	case fileUploaded:
 		m.uploadingFiles = false
 		m.stopwatch.Stop()
