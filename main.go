@@ -218,14 +218,11 @@ func compressApks(flavor string, outChan chan string) tea.Cmd {
 			return cmdError{fmt.Errorf("No file generated for flavor: %s", flavor)}
 		}
 		outChan <- "Compressing APKs..."
-		zipFile, err := os.Create("build-apk.zip")
+		zipFile, err := os.Create(flavor + "-" + "build-apk.zip")
 		if err != nil {
 			return cmdError{err}
 		}
 		zipWriter := zip.NewWriter(zipFile)
-		if err != nil {
-			return cmdError{err}
-		}
 		defer zipWriter.Close()
 		for _, item := range directoryContents {
 			if item.IsDir() {
@@ -263,9 +260,9 @@ func uploadFile(outChan chan string, flavor string) tea.Cmd {
 	return func() tea.Msg {
 		var cmd *exec.Cmd
 		if flavor == "dev" {
-			cmd = exec.Command("curl", "--upload-file", "./build/app/outputs/flutter-apk/app-dev-debug.apk", "https://transfer.sh")
+			cmd = exec.Command("curl", "--upload-file", "./build/app/outputs/flutter-apk/app-"+flavor+"-debug.apk", "https://oshi.at")
 		} else {
-			cmd = exec.Command("curl", "--upload-file", "./build-apk.zip", "https://transfer.sh")
+			cmd = exec.Command("curl", "--upload-file", "./"+flavor+"-build-apk.zip", "https://oshi.at")
 		}
 		return getCmdOutput(outChan, cmd, func() tea.Msg {
 			return fileUploaded{}
