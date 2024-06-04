@@ -119,6 +119,7 @@ func initialModel() tea.Model {
 		item("dev"),
 		item("raf"),
 		item("wellcare"),
+		item("raf + wellcare"),
 	}
 	releaseModes := []list.Item{
 		item("release"),
@@ -439,7 +440,7 @@ func (m model) footerView() string {
 }
 
 func main() {
-	p := tea.NewProgram(initialModel())
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
 		os.Exit(1)
