@@ -43,25 +43,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.appendOutput("Error: " + msg.Err.Error())
 	case shared.ApkBuildingDone:
 		m.buildingApk = false
-		m.stopwatch.Stop()
 		m.finalOutputs = append(m.finalOutputs, "Completed command execution. ✅")
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
 		m.zippingFiles = true
-		m.stopwatch.Reset()
-		return m, tea.Batch(m.stopwatch.Init(), services.CompressApks(m.flavorChoice, m.cmdChan), waitForCmdResp(m.cmdChan))
+		return m, tea.Batch(services.CompressApks(m.flavorChoice, m.cmdChan), waitForCmdResp(m.cmdChan))
 	case shared.ApkZipped:
 		m.zippingFiles = false
-		m.stopwatch.Stop()
 		m.finalOutputs = append(m.finalOutputs, "APKs compressed successfully. ✅")
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
 		m.uploadingFiles = true
-		m.stopwatch.Reset()
-		return m, tea.Batch(m.stopwatch.Init(), services.UploadFile(m.cmdChan, m.flavorChoice), waitForCmdResp(m.cmdChan))
+		return m, tea.Batch(services.UploadForm(m.flavorChoice+"-build-apk.zip"), waitForCmdResp(m.cmdChan))
 	case shared.FileUploaded:
 		m.uploadingFiles = false
 		m.stopwatch.Stop()
 		m.finalOutputs = append(m.finalOutputs, "File uploaded successfully. ✅")
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
+		m.finalOutputs = append(m.finalOutputs, "File link: "+msg.Resp)
 		if m.flavorChoice != "dev" {
 			services.Cleanup()
 		}
