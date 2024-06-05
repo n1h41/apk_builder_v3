@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"time"
-
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -95,9 +93,9 @@ func InitialModel() tea.Model {
 	sp := spinner.New()
 	sp.Spinner = spinner.MiniDot
 
-	fOutputs := []string{}
+	finalOutputs := []string{}
 
-	stopwatch := stopwatch.NewWithInterval(time.Second)
+	stopwatch := stopwatch.New()
 
 	m := model{
 		viewport:     vp,
@@ -106,7 +104,7 @@ func InitialModel() tea.Model {
 		flavors:      flavList,
 		releaseModes: releaseModeList,
 		spinner:      sp,
-		finalOutputs: fOutputs,
+		finalOutputs: finalOutputs,
 		stopwatch:    stopwatch,
 	}
 	return m

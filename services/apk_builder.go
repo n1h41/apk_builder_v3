@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -136,4 +137,8 @@ func getCmdOutput(outChan chan string, c *exec.Cmd, successCb func() tea.Msg) te
 
 func Cleanup() {
 	os.Remove("build-apk.zip")
+}
+
+func UploadForm() {
+	http.PostForm("https://oshi.at", nil)
 }
