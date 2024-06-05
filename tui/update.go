@@ -65,7 +65,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.flavorChoice != "dev" {
 			services.Cleanup()
 		}
-		return m, tea.Quit
+		return m, nil
 	case tea.WindowSizeMsg:
 		m.viewport.Width = msg.Width
 		m.flavors.SetWidth(msg.Width)

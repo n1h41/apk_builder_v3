@@ -24,9 +24,7 @@ func BuildApk(outChan chan string, flavor string, mode string) tea.Cmd {
 		} else {
 			c = exec.Command("flutter", "build", "apk", "--split-per-abi", "--flavor", flavor, "--dart-define", "FLAVOR="+flavor)
 		}
-		return getCmdOutput(outChan, c, func() tea.Msg {
-			return shared.ApkBuildingDone{}
-		})
+		return getCmdOutput(outChan, c)
 	}
 }
 
@@ -94,9 +92,7 @@ func UploadFile(outChan chan string, flavor string) tea.Cmd {
 		} else {
 			cmd = exec.Command("curl", "--upload-file", "./"+flavor+"-build-apk.zip", "https://oshi.at")
 		}
-		return getCmdOutput(outChan, cmd, func() tea.Msg {
-			return shared.FileUploaded{}
-		})
+		return getCmdOutput(outChan, cmd)
 	}
 }
 
@@ -109,7 +105,7 @@ func filterDirectories(source []fs.DirEntry, test func(fs.DirEntry) bool) (ret [
 	return ret
 }
 
-func getCmdOutput(outChan chan string, c *exec.Cmd, successCb func() tea.Msg) tea.Msg {
+func getCmdOutput(outChan chan string, c *exec.Cmd) tea.Msg {
 	out, err := c.StdoutPipe()
 	errPipe, _ := c.StderrPipe()
 	if err != nil {
@@ -120,18 +116,20 @@ func getCmdOutput(outChan chan string, c *exec.Cmd, successCb func() tea.Msg) te
 		return shared.CmdError{Err: err}
 	}
 
-	reader := io.MultiReader(out, errPipe)
+	reader := io.MultiReader(errPipe, out)
 	outBuf := bufio.NewReader(reader)
 
 	for {
 		line, _, err := outBuf.ReadLine()
 		if err == io.EOF {
-			return successCb()
+			return shared.ApkBuildingDone{}
 		}
 		if err != nil {
 			return shared.CmdError{Err: err}
 		}
-		outChan <- string(line)
+		stringifiedLine := string(line)
+		fmt.Println(stringifiedLine)
+		outChan <- stringifiedLine
 	}
 }
 
