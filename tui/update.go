@@ -31,7 +31,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case shared.CmdResp:
 		m.appendOutput(string(msg))
-		if strings.Contains(string(msg), "https://transfer.sh") {
+		if strings.Contains(string(msg), "https://oshi.at") {
 			parts := strings.Split(string(msg), "%")
 			m.finalOutputs = append(m.finalOutputs, "File link: "+parts[0])
 		}

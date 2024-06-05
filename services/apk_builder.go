@@ -3,12 +3,15 @@ package services
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -24,7 +27,9 @@ func BuildApk(outChan chan string, flavor string, mode string) tea.Cmd {
 		} else {
 			c = exec.Command("flutter", "build", "apk", "--split-per-abi", "--flavor", flavor, "--dart-define", "FLAVOR="+flavor)
 		}
-		return getCmdOutput(outChan, c)
+		return getCmdOutput(outChan, c, func() tea.Msg {
+			return shared.ApkBuildingDone{}
+		})
 	}
 }
 
@@ -92,7 +97,9 @@ func UploadFile(outChan chan string, flavor string) tea.Cmd {
 		} else {
 			cmd = exec.Command("curl", "--upload-file", "./"+flavor+"-build-apk.zip", "https://oshi.at")
 		}
-		return getCmdOutput(outChan, cmd)
+		return getCmdOutput(outChan, cmd, func() tea.Msg {
+			return shared.ApkBuildingDone{}
+		})
 	}
 }
 
@@ -105,7 +112,7 @@ func filterDirectories(source []fs.DirEntry, test func(fs.DirEntry) bool) (ret [
 	return ret
 }
 
-func getCmdOutput(outChan chan string, c *exec.Cmd) tea.Msg {
+func getCmdOutput(outChan chan string, c *exec.Cmd, successCb func() tea.Msg) tea.Msg {
 	out, err := c.StdoutPipe()
 	errPipe, _ := c.StderrPipe()
 	if err != nil {
@@ -122,6 +129,7 @@ func getCmdOutput(outChan chan string, c *exec.Cmd) tea.Msg {
 	for {
 		line, _, err := outBuf.ReadLine()
 		if err == io.EOF {
+			successCb()
 			return shared.ApkBuildingDone{}
 		}
 		if err != nil {
@@ -137,6 +145,45 @@ func Cleanup() {
 	os.Remove("build-apk.zip")
 }
 
-func UploadForm() {
-	http.PostForm("https://oshi.at", nil)
+func UploadForm(filePath string) tea.Msg {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return shared.CmdError{Err: err}
+	}
+	defer file.Close()
+
+	buf := new(bytes.Buffer)
+	writer := multipart.NewWriter(buf)
+	part, err := writer.CreateFormFile("f", filepath.Base(filePath))
+	if err != nil {
+		return shared.CmdError{Err: err}
+	}
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return shared.CmdError{Err: err}
+	}
+	err = writer.Close()
+	if err != nil {
+		return shared.CmdError{Err: err}
+	}
+	req, err := http.NewRequest("POST", "https://oshi.at", buf)
+	if err != nil {
+		return shared.CmdError{Err: err}
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return shared.CmdError{Err: err}
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return shared.CmdError{Err: fmt.Errorf("Failed to upload file. Status code: %d", resp.StatusCode)}
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return shared.CmdError{Err: err}
+	}
+	fmt.Println(string(body))
+	return shared.FileUploaded{}
 }
