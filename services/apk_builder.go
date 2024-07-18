@@ -187,7 +187,7 @@ func UploadForm(filePath string) tea.Cmd {
 			return shared.CmdError{Err: err}
 		}
 		// return shared.FileUploaded{Resp: string(body)}
-		return shared.FileUploaded{Resp: extractDownloadLink(string(body)) + "\n" + "MANAGE: " + extractManageLink(string(body))}
+		return shared.FileUploaded{Resp: extractDownloadLink(string(body))}
 	}
 }
 
