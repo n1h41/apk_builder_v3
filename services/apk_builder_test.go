@@ -33,3 +33,14 @@ func TestUploadForm(t *testing.T) {
 	result := UploadForm("./apk_builder_test.go")
 	t.Log(result)
 }
+
+func TestGenerateQRCode(t *testing.T) {
+	result := GenerateQRCode("https://www.instagram.com")
+	t.Log(result)
+}
+
+func TestExtractDownloadLink(t *testing.T) {
+	extractDownloadLink(`
+DL: https://oshi.at/TjRi/dev-build-apk.zip
+    `)
+}
