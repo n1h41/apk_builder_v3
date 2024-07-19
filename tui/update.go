@@ -59,6 +59,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.finalOutputs = append(m.finalOutputs, "File uploaded successfully. ✅")
 		m.finalOutputs = append(m.finalOutputs, "Elapsed time: "+m.stopwatch.Elapsed().String())
 		m.finalOutputs = append(m.finalOutputs, "File link: "+msg.Resp)
+		m.appendOutput(services.GenerateQRCode(msg.Resp))
 		if m.flavorChoice != "dev" {
 			services.Cleanup()
 		}

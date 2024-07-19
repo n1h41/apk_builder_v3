@@ -15,6 +15,7 @@ import (
 	"regexp"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/skip2/go-qrcode"
 
 	"n1h41/apk_builder_v3/shared"
 )
@@ -185,7 +186,27 @@ func UploadForm(filePath string) tea.Cmd {
 		if err != nil {
 			return shared.CmdError{Err: err}
 		}
-		fmt.Println(string(body))
-		return shared.FileUploaded{Resp: string(body)}
+		// return shared.FileUploaded{Resp: string(body)}
+		return shared.FileUploaded{Resp: extractDownloadLink(string(body))}
 	}
+}
+
+func GenerateQRCode(data string) string {
+	qr, err := qrcode.New(data, qrcode.Medium)
+	if err != nil {
+		panic(err)
+	}
+	return qr.ToSmallString(true)
+}
+
+func extractManageLink(data string) string {
+	r, _ := regexp.Compile(`MANAGE:\s(.*)`)
+	result := r.FindStringSubmatch(data)
+	return result[len(result)-1]
+}
+
+func extractDownloadLink(data string) string {
+	r, _ := regexp.Compile(`DL:\s(.*)`)
+	result := r.FindStringSubmatch(data)
+	return result[len(result)-1]
 }
