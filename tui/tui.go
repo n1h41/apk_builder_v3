@@ -12,8 +12,8 @@ import (
 
 var (
 	docStyle          = lipgloss.NewStyle().Margin(1, 2)
-	listSectionStyle  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("211")).Padding(1)
-	titleStyle        = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("219"))
+	listSectionStyle  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("68")).Padding(1)
+	titleStyle        = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("153"))
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Bold(true)
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
@@ -93,6 +93,14 @@ func (m mainModel) selectedQuestion() list.Model {
 	return m.questionList[m.focused]
 }
 
+func (m mainModel) selectedChoice() string {
+	i, ok := m.selectedQuestion().SelectedItem().(item)
+	if ok {
+		return string(i)
+	}
+	return ""
+}
+
 func createList(title string, options []list.Item) list.Model {
 	l := list.New(options, itemDelegate{}, 0, 0)
 	l.Title = title
@@ -101,7 +109,7 @@ func createList(title string, options []list.Item) list.Model {
 	l.SetShowTitle(true)
 	l.Styles.Title = titleStyle
 	// l.SetSize(30, 15)
-	l.SetHeight(15)
+	l.SetHeight(14)
 	return l
 }
 
@@ -147,15 +155,14 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q":
 			return m, tea.Quit
-		case "l":
+		case "l", "left":
 			m.focused = m.focused.next()
-		case "h":
+		case "h", "right":
 			m.focused = m.focused.prev()
 		case " ":
-			i, ok := m.selectedQuestion().SelectedItem().(item)
-			if ok {
-				m.answers[m.focused] = string(i)
-			}
+			m.answers[m.focused] = m.selectedChoice()
+		case "c":
+			m.answers = make([]string, 2)
 		}
 
 	}
@@ -166,6 +173,14 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View implements tea.Model.
 func (m mainModel) View() string {
-	answer := m.answers[m.focused]
-	return lipgloss.Place(m.size.Width, m.size.Height, lipgloss.Center, lipgloss.Center, docStyle.Render(listSectionStyle.Render(m.selectedQuestion().View())+"\n"+"Answer: "+answerStyle.Render(answer)))
+	answerView := ""
+	var answers string
+	for i, v := range m.answers {
+		if len(v) == 0 {
+			continue
+		}
+		answers = fmt.Sprintf("%s: %s", m.questionList[i].Title, answerStyle.Render(m.answers[i]))
+		answerView = answerView + "\n" + answers
+	}
+	return lipgloss.Place(m.size.Width, m.size.Height, lipgloss.Center, lipgloss.Center, docStyle.Render(listSectionStyle.Render(m.selectedQuestion().View())+"\n"+answerView))
 }
