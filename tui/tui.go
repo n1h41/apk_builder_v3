@@ -15,11 +15,12 @@ var (
 	listSectionStyle  = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("68")).Padding(1)
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("153"))
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170")).Bold(true)
+	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
-	answerStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("118"))
+	answerStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("118")).Underline(true)
+	errorStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("255")).Background(lipgloss.Color("1"))
 )
 
 type question int
@@ -163,6 +164,11 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.answers[m.focused] = m.selectedChoice()
 		case "c":
 			m.answers = make([]string, 2)
+		case "enter":
+			/* buildConfig := entity.BuildConfig{
+				AppFlavor:   m.answers[flavor],
+				ReleaseType: m.answers[release],
+			} */
 		}
 
 	}
@@ -182,5 +188,7 @@ func (m mainModel) View() string {
 		answers = fmt.Sprintf("%s: %s", m.questionList[i].Title, answerStyle.Render(m.answers[i]))
 		answerView = answerView + "\n" + answers
 	}
-	return lipgloss.Place(m.size.Width, m.size.Height, lipgloss.Center, lipgloss.Center, docStyle.Render(listSectionStyle.Render(m.selectedQuestion().View())+"\n"+answerView))
+	errorText := "Choose all options to continue" + lipgloss.NewStyle().Bold(true).Render(" (c)")
+	errorStyle.Width(41).AlignHorizontal(lipgloss.Center).MarginTop(1)
+	return lipgloss.Place(m.size.Width, m.size.Height, lipgloss.Center, lipgloss.Center, docStyle.Render(listSectionStyle.Render(m.selectedQuestion().View())+"\n"+answerView+"\n"+errorStyle.Render(errorText)))
 }
