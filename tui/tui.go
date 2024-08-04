@@ -162,7 +162,7 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focused = m.focused.prev()
 		case " ":
 			m.answers[m.focused] = m.selectedChoice()
-		case "c":
+		case "d":
 			m.answers = make([]string, 2)
 		case "enter":
 			/* buildConfig := entity.BuildConfig{
