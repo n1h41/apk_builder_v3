@@ -3,6 +3,7 @@ package tui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 
+	"n1h41/apk_builder_v3/constants"
 	"n1h41/apk_builder_v3/entity"
 	"n1h41/apk_builder_v3/utils"
 )
@@ -24,6 +25,12 @@ func (b buildModel) Init() tea.Cmd {
 // Update implements tea.Model.
 func (b buildModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case constants.ChangeViewMsg:
+		b.size = msg.Size
+		data, ok := msg.Data.(entity.BuildConfig)
+		if ok {
+			b.config = data
+		}
 	case tea.WindowSizeMsg:
 		b.size = msg
 	case tea.KeyMsg:
