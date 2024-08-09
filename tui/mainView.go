@@ -2,13 +2,15 @@ package tui
 
 import (
 	"fmt"
-	"io"
-	"strings"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
+	"n1h41/apk_builder_v3/constants"
+	"n1h41/apk_builder_v3/entity"
 	"n1h41/apk_builder_v3/utils"
 )
 
@@ -46,42 +48,35 @@ func (q question) prev() question {
 	return q - 1
 }
 
-type item string
-
-func (i item) FilterValue() string {
-	return ""
-}
-
-type itemDelegate struct{}
-
-func (d itemDelegate) Height() int {
-	return 1
-}
-
-func (d itemDelegate) Spacing() int {
-	return 0
-}
-
-func (d itemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd {
-	return nil
-}
-
-func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(item)
-	if !ok {
-		return
-	}
-
-	str := fmt.Sprintf("%d. %s", index+1, i)
-
-	fn := itemStyle.Render
-	if index == m.Index() {
-		fn = func(s ...string) string {
-			return selectedItemStyle.Render("> " + strings.Join(s, " "))
-		}
-	}
-
-	fmt.Fprint(w, fn(str))
+var keys = KeyMap{
+	Up: key.NewBinding(
+		key.WithKeys("k"),
+		key.WithHelp("k", "move up"),
+	),
+	Down: key.NewBinding(
+		key.WithKeys("j"),
+		key.WithHelp("j", "move down"),
+	),
+	Right: key.NewBinding(
+		key.WithKeys("l"),
+		key.WithHelp("l", "move right"),
+	),
+	Left: key.NewBinding(
+		key.WithKeys("h"),
+		key.WithHelp("h", "move left"),
+	),
+	Quit: key.NewBinding(
+		key.WithKeys("q"),
+		key.WithHelp("q", "quit"),
+	),
+	Continue: key.NewBinding(
+		key.WithKeys("c"),
+		key.WithHelp("c", "continue"),
+	),
+	Help: key.NewBinding(
+		key.WithKeys("?"),
+		key.WithHelp("?", "show help"),
+	),
 }
 
 type mainModel struct {
@@ -90,6 +85,8 @@ type mainModel struct {
 	questionList []list.Model
 	answers      []string
 	focused      question
+	error        bool
+	help         help.Model
 }
 
 func (m mainModel) selectedQuestion() list.Model {
@@ -111,7 +108,7 @@ func createList(title string, options []list.Item) list.Model {
 	l.SetFilteringEnabled(false)
 	l.SetShowTitle(true)
 	l.Styles.Title = titleStyle
-	// l.SetSize(30, 15)
+	l.SetShowHelp(false)
 	l.SetHeight(14)
 	return l
 }
@@ -138,6 +135,8 @@ func NewMainModel() *mainModel {
 		questionList: questions,
 		focused:      flavor,
 		answers:      make([]string, 2),
+		error:        false,
+		help:         help.New(),
 	}
 }
 
@@ -163,12 +162,28 @@ func (m mainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focused = m.focused.prev()
 		case " ":
 			m.answers[m.focused] = m.selectedChoice()
+		case "?":
+			m.help.ShowAll = !m.help.ShowAll
 		case "d":
 			m.answers = make([]string, 2)
 		case "c":
 			b := NewBuildModel()
 			mainView = &m
-			return b.Update(m.size)
+			selectedFlavor := m.answers[flavor]
+			selectedReleaseType := m.answers[release]
+			if len(selectedFlavor) == 0 || len(selectedReleaseType) == 0 {
+				m.error = true
+				return m, nil
+			}
+			data := entity.BuildConfig{
+				AppFlavor:   selectedFlavor,
+				ReleaseType: selectedReleaseType,
+			}
+			changeView := constants.ChangeViewMsg{
+				Size: m.size,
+				Data: data,
+			}
+			return b.Update(changeView)
 		}
 	}
 	m.questionList[m.focused], cmd = m.questionList[m.focused].Update(msg)
@@ -187,7 +202,13 @@ func (m mainModel) View() string {
 		answers = fmt.Sprintf("%s: %s", m.questionList[i].Title, answerStyle.Render(m.answers[i]))
 		answerView = answerView + "\n" + answers
 	}
+	error := ""
 	errorText := "Choose all options to continue" + lipgloss.NewStyle().Bold(true).Render(" (c)")
+	if m.error {
+		error = errorStyle.Render(errorText)
+	}
+	help := m.help.View(keys)
 	errorStyle.Width(41).AlignHorizontal(lipgloss.Center).MarginTop(1)
-	return utils.LipglossCenter(m.size.Width, m.size.Height, docStyle.Render(listSectionStyle.Render(m.selectedQuestion().View())+"\n"+answerView+"\n"+errorStyle.Render(errorText)))
+	v := lipgloss.JoinVertical(lipgloss.Center, listSectionStyle.Render(m.selectedQuestion().View()), "\n", answerView, "\n", error, "\n", help)
+	return utils.LipglossCenter(m.size.Width, m.size.Height, docStyle.Render(v))
 }
