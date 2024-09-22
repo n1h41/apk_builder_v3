@@ -35,6 +35,8 @@ func (b buildModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		b.size = msg
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "enter":
+			return b, nil
 		case "q":
 			return b, tea.Quit
 		case "backspace":
